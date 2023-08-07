@@ -162,12 +162,12 @@ model {
 generated quantities{
   matrix[n_var, n_var] Sigma_level_0 = diag_pre_multiply(tau_level_0, L_Omega_level_0) * diag_pre_multiply(tau_level_0, L_Omega_level_0)';
   
-  // // Save log-likelihood for LOO package
-  //   vector[n_images] log_lik;
-  // 
-  //   for(i in 1:n_images){
-  //       log_lik[i] = sum(log_softmax(X[start[i]:end[i]]*beta_level_1[exp_index[i]]) .* Ny[start[i]:end[i]]);
-  //     }
+ 
+   vector[n_images] log_lik;
+ 
+  for(i in 1:n_images){
+      log_lik[i] = sum(log_softmax(X[start[i]:end[i], 1:n_var]*beta_level_1[exp_index[i]]') .* Ny[start[i]:end[i]]);
+    }
   
 }"
 
@@ -185,18 +185,14 @@ model_hhml
 
 saveRDS(model_hhml,'/Users/apple/Desktop/result_hierarchical_multinomial_logit_model_with_max_count.rds')
 
-
-##loo
-library(loo)
-loo_fit <- loo(model_hhml)
-print(loo_fit)
+model_hmnl= readRDS('/Users/apple/Desktop/result_hierarchical_multinomial_logit_model_with_max_count.rds')
 
 
 
 
 ###
 
-betas_level_0_summary_01 = summary(model_hhml, pars = c("beta_level_0"), probs = c(0.025, 0.1, 0.5, 0.9, 0.975))$summary %>% 
+betas_level_0_summary_01 = summary(model_hmnl, pars = c("beta_level_0"), probs = c(0.025, 0.1, 0.5, 0.9, 0.975))$summary %>% 
   as.data.frame() %>% 
   select("mean", "sd", "2.5%", "10%", "90%", "97.5%") %>% 
   mutate(variable = colnames(X_stan_list$X),
@@ -217,7 +213,7 @@ betas_level_0_summary_01 %>%
   xlab("Parameter") +
   ylab("Value") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
-  ggtitle(paste0("Japanese fly hyper betas, experiments 1 to ", n_experiments))
+  ggtitle(paste0("Overall-level parameters, experiments 1 to ", n_experiments))
 
 
 
@@ -225,7 +221,7 @@ betas_level_0_summary_01 %>%
 names_betas_level_1 = X_stan_list$names_betas_level_1
 
 
-betas_level_1_summary_01 = summary(model_stan_01, pars = c("beta_level_1"), probs = c(0.025, 0.1, 0.5, 0.9, 0.975))$summary %>% 
+betas_level_1_summary_01 = summary(model_hhml, pars = c("beta_level_1"), probs = c(0.025, 0.1, 0.5, 0.9, 0.975))$summary %>% 
   as.data.frame() %>% 
   select("mean","sd", "2.5%", "10%", "90%", "97.5%") %>% 
   mutate(
@@ -253,7 +249,7 @@ betas_level_1_summary_01 %>%
   theme_bw() +
   xlab("Parameter") +
   ylab("Value") +
-  ggtitle(paste0("Japanese fly betas of experiments 1 to ", n_experiments)) +
+  ggtitle(paste0("Batch-level parameters of experiments 1 to ", n_experiments)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 
 
@@ -272,7 +268,7 @@ betas_level_1_summary_01 %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  ggtitle(paste0("Japanese fly betas of experiments 1 to ", n_experiments))
+  ggtitle(paste0("Batch-level parameters of experiments 1 to ", n_experiments))
 
 
 betas_level_1_summary_01 %>% 
@@ -289,7 +285,7 @@ betas_level_1_summary_01 %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  ggtitle(paste0("Japanese fly betas of experiments 1 to ", n_experiments))
+  ggtitle(paste0("Batch-level parameters of experiments 1 to ", n_experiments))
 
 
 
@@ -312,7 +308,7 @@ betas_level_0_summary_01 %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  ggtitle(paste0("Japanese fly betas of experiments 1 to ", n_experiments)) +
+  ggtitle(paste0("Batch-level parameters of experiments 1 to ", n_experiments)) +
   scale_size_continuous(range = c(0.5, 2.5))
 
 
@@ -336,7 +332,7 @@ betas_level_0_summary_01 %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  ggtitle(paste0("Japanese fly betas of experiments 1 to ", n_experiments)) +
+  ggtitle(paste0("Batch-level parameters of experiments 1 to ", n_experiments)) +
   scale_size_continuous(range = c(0.5, 2)) +
   scale_color_manual(values = c("red", "#381532", "#4b1b42", "#5d2252", "#702963",
                                 "#833074", "#953784", "#a83e95"))
@@ -344,7 +340,7 @@ betas_level_0_summary_01 %>%
 
 
 Sigma_level_0_posterior_median_01 = matrix(
-  as.data.frame(summary(model_stan_01, pars = c("Sigma_level_0"), probs = c(0.5))$summary)$`50%`, 
+  as.data.frame(summary(model_hhml, pars = c("Sigma_level_0"), probs = c(0.5))$summary)$`50%`, 
   ncol = stan_data$n_var)
 
 

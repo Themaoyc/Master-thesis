@@ -3,10 +3,12 @@ library(tidyverse)
 library(here)
 
 
-designs_folder = here("/Users/yuuunawang/Downloads/KU L/#MASTER THESIS/insects/")
+designs_folder = here("out/insect_pv_designs/")
 dir.create(designs_folder, showWarnings = F)
 
 n_cores = parallel::detectCores()
+
+
 
 
 q = 7
@@ -14,7 +16,6 @@ J = 2
 S = 60 #total number of choice sets
 n_pv = 1
 
-#beta_vec = c(rnorm(35, 0, 1))
 beta_vec = c(rep(0,35))
 names(beta_vec) = c(
   "R","O","Y","G","B","P",
@@ -30,7 +31,7 @@ names(beta_vec) = c(
   "I(z^2)"
 )
 
-SDs = c(rep(10,6), rep(0.01,21), rep(10,7), 0.01)
+SDs = c(rep(100,35))
 names(SDs) = names(beta_vec)
 var_cov_mat = diag(SDs^2)
 
@@ -38,9 +39,13 @@ var_cov_mat = diag(SDs^2)
 n_draws = 128
 beta_correlated_draws_insect = get_correlated_halton_draws(beta_vec, var_cov_mat, n_draws)
 
-n_random_initial_starts = 4
+
+# n_random_initial_starts = 80
+n_random_initial_starts = 48
 max_it_insect = 15
+# max_it_insect = 3
 seed = 2022
+
 
 insect_pv_d_opt_filename = paste0(designs_folder, "insect_pv_d_optimal_", max_it_insect, "iter.rds")
 insect_pv_i_opt_filename = paste0(designs_folder, "insect_pv_i_optimal_", max_it_insect, "iter.rds")
@@ -49,7 +54,12 @@ insect_pv_i_opt_filename = paste0(designs_folder, "insect_pv_i_optimal_", max_it
 if(file.exists(insect_pv_d_opt_filename)){
   cat("D_B optimal design already exists.\n")
 } else{
-  #28336s with 128 draws 4 starts 15 iterations
+  # 40 seconds in 4 cores with 4 random starts and 4 iterations and point estimate
+  # 4 minutes in 4 cores with 4 random starts and 3 iterations and 12 draws
+  # 42 minutes in 4 cores with 4 random starts and 3 iterations and 128 draws
+  # 8643.5 seconds (2.5 hours) in 4 cores with 4 random starts and 10 iterations and 128 draws
+  # 10174 seconds in 4 cores with 4 random starts and 15 iterations and 128 draws
+  # 45,000 seconds in 12 cores with 48 random starts and 15 iterations and 128 draws
   cat("Doing D_B optimal design for insect experiment.\n")
   (t1D = Sys.time())
   insect_pv_D_opt = mnl_mixture_coord_exch(
@@ -61,8 +71,8 @@ if(file.exists(insect_pv_d_opt_filename)){
     order = 2,
     beta = beta_correlated_draws_insect,
     transform_beta = F,
-    opt_method = "B",
-    #n_cox_points = 1000,
+    opt_method = "D",
+    n_cox_points = 10,
     opt_crit = "D",
     max_it = max_it_insect,
     verbose = 1,
@@ -83,7 +93,8 @@ if(file.exists(insect_pv_d_opt_filename)){
 if(file.exists(insect_pv_i_opt_filename)){
   cat("I_B optimal design already exists.\n")
 } else{
-  # 5466.4s with 128 draws 4 starts 15 iterations
+  # 9804.4 seconds in 4 cores with 4 random starts and 15 iterations and 128 draws
+  # 45,000 seconds in 12 cores with 48 random starts and 15 iterations and 128 draws
   cat("Doing I_B optimal design for insect experiment.\n")
   (t1I = Sys.time())
   insect_pv_I_opt =  mnl_mixture_coord_exch(
@@ -95,8 +106,8 @@ if(file.exists(insect_pv_i_opt_filename)){
     order = 2,
     beta = beta_correlated_draws_insect,
     transform_beta = F,
-    opt_method = "B",
-    #n_cox_points = 10,
+    opt_method = "D",
+    n_cox_points = 10,
     opt_crit = "I",
     max_it = max_it_insect,
     verbose = 1,
@@ -112,20 +123,6 @@ if(file.exists(insect_pv_i_opt_filename)){
 }
 
 
-# Check the min and max values of components of each design
-min_D=c()
-min_I=c()
-for (i in 1:24 ) {
-  min_D=cbind(min_D,min(insect_pv_D_opt[[i]][["X"]][1:7, 1:2, 1:60]))
-  min_I=cbind(min_I,min(insect_pv_I_opt[[i]][["X"]][1:7, 1:2, 1:60]))
-}
-
-max_D=c()
-max_I=c()
-for (i in 1:24 ) {
-  max_D=cbind(max_D,max(insect_pv_D_opt[[i]][["X"]][1:7, 1:2, 1:60]))
-  max_I=cbind(max_I,max(insect_pv_I_opt[[i]][["X"]][1:7, 1:2, 1:60]))
-}
 
 
 
